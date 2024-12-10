@@ -7,7 +7,7 @@ from sqlalchemy.orm import mapped_column
 from sqlalchemy.orm import relationship
 import sqlalchemy.types as SQLTypes
 
-from orm_base import Base
+from .orm_base import Base
 
 
 book_authors = Table(
@@ -23,7 +23,7 @@ book_subjects = Table(
     Column("subject", ForeignKey("subjects.id")),
 )
 book_locc = Table(
-    "book_subjects",
+    "book_locc",
     Base.metadata,
     Column("book", ForeignKey("books.id")),
     Column("LoCC", ForeignKey("LoCC.id")),
@@ -39,6 +39,8 @@ class Book(Base):
     subjects: Mapped[List["Subject"]] = relationship(secondary=book_subjects)
     locc: Mapped[List["LoCC"]] = relationship(secondary=book_locc)
     summary: Mapped["Summary"] = relationship(back_populates="book")
+    embeddings: Mapped["Embedding"] = relationship(back_populates="book")
+    cluster: Mapped[int] = mapped_column(ForeignKey("clusters.id"))
     def __repr__(self) -> str:
         return f"User(id={self.id!r}, name={self.name!r}, fullname={self.fullname!r})"
 
@@ -58,3 +60,7 @@ class LoCC(Base):
     __tablename__ = "locc"
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(SQLTypes.String(10), unique=True)
+
+from .summaries import Summary
+from .embeddings import Embedding
+from .cluster import Cluster

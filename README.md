@@ -19,6 +19,10 @@ Cluster selection: $\forall c \in C (score = \sum_{i=0}^{|b_s|} \text{cosine\_si
 
 Book Selection: $\forall r_p \in R_p (score = \sum_{i=0}^{|b_s|} \text{cosine\_similarity}(b_{s,i}, \text{embedding}(b)))$, take the top $n$ scoring books as recommendations.
 
+#### Algorithmic Complexity
+A naive approach would compare every scored book to every book in the dataset, thus being $O(|b_s| * |B|)$.
+
+Our clustered approach divides this into $O(|b_s| * k + \frac{|B| * |b_s|}{k})$, and using $k=\sqrt{|b_s|}$ we achieve an algorithmic complexity of $O(|b_s| * \sqrt{|b_s|} + |B| * \sqrt{|b_s|}) = O(\sqrt{b_s} * (|b_s| + |B|))$
 
 ## Potential Extras
 - [] Adding dimentionality reduction with HDBScan and adding a bonus to books in the same HDBScan clusters - this would likely reward books in the same genres.

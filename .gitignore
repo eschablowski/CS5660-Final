@@ -1,2 +1,3 @@
 ./txt-files
 *.db
+*.pyc
