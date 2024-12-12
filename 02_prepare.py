@@ -9,6 +9,7 @@ import math
 import sklearn.cluster
 from sqlalchemy.sql.expression import select
 import torch
+import itertools
 
 device = "cuda" if torch.cuda.is_available() else "mps" if torch.device("mps") else "cpu"
 device = torch.device(device)
@@ -101,7 +102,7 @@ if __name__ == "__main__":
     if not session.query(db.Book).count():
         print("Loading books into database")
         books = load_metadata(f"{args.output_dir}/books.csv")
-        for index, book in tqdm.tqdm(books.fillna('').iterrows(), total=books.shape[0]):
+        for index, book in tqdm.tqdm(books.fillna('').iterrows(), desc="Loading books into database", total=books.shape[0]):
             book_text = get_book("books", book["Text#"])
             if book_text:
                 book = db.Book(
@@ -120,9 +121,8 @@ if __name__ == "__main__":
     session.commit()
     
 
-    print("Summarizing books")
     book_count = session.query(db.Book).count()
-    for book in tqdm.tqdm(session.query(db.Book).yield_per(args.batchsize), total=book_count):
+    for book in tqdm.tqdm(session.query(db.Book).yield_per(args.batchsize), total=book_count, desc="Creating summaries"):
         summary = db.Summary(book_id=book.id, book=book, summary=summarize(book.text, model=args.summary_model), summarization_model=args.summary_model)
         session.add(summary)
         if book.id % args.batchsize == 0:
@@ -131,9 +131,8 @@ if __name__ == "__main__":
     
     session.commit()
 
-
-    print("Creating embeddings")
-    for summary in tqdm.tqdm(session.query(db.Summary).yield_per(args.batchsize), total=book_count):
+    summary_count = session.query(db.Summary).count()
+    for summary in tqdm.tqdm(session.query(db.Summary).yield_per(args.batchsize), total=summary_count, desc="Creating Embeddings"):
         book = summary.book
         embedding = db.Embedding(book=book,
                     summary=create_embeddings(summary.summary, model=args.embedding_model),
@@ -149,13 +148,23 @@ if __name__ == "__main__":
 
     session.commit()
     
+    embedding_count = session.query(db.Embedding).count()
+    def batch(iterable, n):
+        "Batch data into lists of length n. The last batch may be shorter."
+        # batched('ABCDEFG', 3) --> ABC DEF G
+        it = iter(iterable)
+        while True:
+            batch = list(itertools.islice(it, n))
+            if not batch:
+                return
+            yield batch
     kmeans = sklearn.cluster.MiniBatchKMeans(n_clusters=math.ceil(math.sqrt(session.query(db.Embedding).count())))
-    for embeddings in session.query(db.Embedding).yield_per(args.cluster_batchsize):
+    for embeddings in tqdm.tqdm(batch(session.query(db.Embedding).yield_per(args.cluster_batchsize), args.cluster_batchsize), total=embedding_count, desc="Clustering Embeddings"):
         kmeans.partial_fit([embedding.combined for embedding in embeddings])
     for id, cluster in kmeans.cluster_centers_:
         db.Cluster(id=id, centroid=cluster)
     session.commit()
 
     for books in session.query(db.Book).yield_per(args.batchsize):
-        for book in books:
-            book.cluster = kmeans.predict(book.embedding)
+        book.cluster = kmeans.predict(book.embedding)
+            

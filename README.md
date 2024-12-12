@@ -15,9 +15,9 @@
 ### The recomendation algorithm:
 Our variables: $b_s$ is the array of scored books, $B$ is the set of all books, $C$ is the set of all clusters, $k$ is the number of clusters.
 
-Cluster selection: $\forall c \in C (score = \sum_{i=0}^{|b_s|} \text{cosine\_similarity}(b_{s,i}, \text{centroid}(c)))$, take the top $n * \frac{k}{|B|}$ scoring clusters' books as potential recommendations, $R_p$.
+Cluster selection: $\forall c \in C (score = \sum_{i=0}^{|b_s|} \text{cosine\\\_similarity}(b_{s,i}, \text{centroid}(c)))$, take the top $n * \frac{k}{|B|}$ scoring clusters' books as potential recommendations, $R_p$.
 
-Book Selection: $\forall r_p \in R_p (score = \sum_{i=0}^{|b_s|} \text{cosine\_similarity}(b_{s,i}, \text{embedding}(b)))$, take the top $n$ scoring books as recommendations.
+Book Selection: $\forall r_p \in R_p (score = \sum_{i=0}^{|b_s|} \text{cosine\\\_similarity}(b_{s,i}, \text{embedding}(b)))$, take the top $n$ scoring books as recommendations.
 
 #### Algorithmic Complexity
 A naive approach would compare every scored book to every book in the dataset, thus being $O(|b_s| * |B|)$.

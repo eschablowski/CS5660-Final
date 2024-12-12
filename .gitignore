@@ -1,3 +1,4 @@
 books
 *.db
 *.pyc
+.DS_Store
