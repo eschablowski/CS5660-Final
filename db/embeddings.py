@@ -21,6 +21,7 @@ class Embedding(Base):
     locc: Mapped[numpy.array] = mapped_column(SQLTypes.PickleType)
     book: Mapped[Book] = relationship(back_populates="embeddings")
     summary: Mapped[Summary] = relationship()
+    combined: Mapped[numpy.array] = mapped_column(SQLTypes.PickleType)
 
     def __repr__(self) -> str:
         return f"Embedding(id={self.id!r}, model={self.embedding_model!r})"

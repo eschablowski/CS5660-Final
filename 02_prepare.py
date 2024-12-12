@@ -135,19 +135,23 @@ if __name__ == "__main__":
     print("Creating embeddings")
     for summary in tqdm.tqdm(session.query(db.Summary).yield_per(args.batchsize), total=book_count):
         book = summary.book
-        db.Embedding(book=book,
+        embedding = db.Embedding(book=book,
                     summary=create_embeddings(summary.summary, model=args.embedding_model),
                     title=create_embeddings(book.title, model=args.embedding_model),
                     authors=[create_embeddings(a.name, model=args.embedding_model) for a in book.authors],
                     subjects=[create_embeddings(s.nam, model=args.embedding_modele) for s in book.subjects],
                     locc=[create_embeddings(l.name, model=args.embedding_model) for l in book.locc]
         )
+        subject = torch.nn.functional.normalize(torch.addcmul(embedding.subjects))
+        authors = torch.nn.functional.normalize(torch.addcmul(embedding.authors))
+        locc = torch.nn.functional.normalize(torch.addcmul(embedding.locc))
+        embedding.combined = torch.cat([embedding.summary, embedding.title])
+
     session.commit()
     
     kmeans = sklearn.cluster.MiniBatchKMeans(n_clusters=math.ceil(math.sqrt(session.query(db.Embedding).count())))
     for embeddings in session.query(db.Embedding).yield_per(args.cluster_batchsize):
-        for embedding in embeddings:
-            kmeans.partial_fit(embedding)
+        kmeans.partial_fit([embedding.combined for embedding in embeddings])
     for id, cluster in kmeans.cluster_centers_:
         db.Cluster(id=id, centroid=cluster)
     session.commit()

@@ -1,5 +1,6 @@
 {
     "files.exclude": {
         "gutenberg": true
-    }
+    },
+    "git.ignoreLimitWarning": true
 }
